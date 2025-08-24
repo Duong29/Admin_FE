@@ -10,26 +10,20 @@ import { Input } from "@/components/ui/input";
 import { Label } from "@/components/ui/label";
 import { Textarea } from "@/components/ui/textarea";
 import { ImageIcon, Upload } from "lucide-react";
-import { useEffect, useRef, useState } from "react";
-import { toast } from "sonner";
 import { BLOG_BASE_URL } from "../api/api";
+import { useEffect, useState } from "react";
+import { useParams } from "react-router-dom";
+import { toast } from "sonner";
 
-export function Blog() {
-  const fileRef = useRef(null);
+export function BlogUpdate() {
+  const { id } = useParams();
   const [inputs, setInputs] = useState({
     title: "",
     description: "",
     content: "",
     image: "",
   });
-  const [imageFile, setImageFile] = useState(null);
-  const [preview, setPreview] = useState("");
-
-  useEffect(() => {
-    return () => {
-      if (preview) URL.revokeObjectURL(preview);
-    };
-  }, [preview]);
+  const [imageFile, setImageFiles] = useState(null);
 
   const handleInput = (e) => {
     const { name, value } = e.target;
@@ -43,41 +37,24 @@ export function Blog() {
     if (!inputs.description.trim())
       formErrors.description = "Vui lòng thêm mô tả";
     if (!inputs.content.trim()) formErrors.content = "Vui lòng thêm nội dung";
-    return formErrors;
   };
 
   const validateFile = (file) => {
     const allowTypes = ["image/png", "image/jpg", "image/jpeg"];
-    if (!allowTypes.includes(file.type)) return "Chỉ hỗ trợ ảnh JPG, PNG";
     const maxSize = 1024 * 1024;
+    if (!allowTypes.includes(file.type)) return '"Chỉ hỗ trợ ảnh JPG, PNG';
     if (file.size > maxSize) return "Kích thước ảnh tối đa là 1MB";
   };
 
-  const resetFile = () => {
-    setInputs((prev) => ({
-      ...prev,
-      image: "",
-    }));
-    setPreview("");
-    setImageFile(null);
-    if (fileRef.current) fileRef.current.value = "";
-  };
-
-  const handleInputFile = (e) => {
+  const handleFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-
     const errorMessage = validateFile(file);
-
     if (errorMessage) {
       toast.error(errorMessage);
-      resetFile();
       return;
     }
-
-    setImageFile(file);
-    setPreview(URL.createObjectURL(file));
-
+    setImageFiles(file);
     const reader = new FileReader();
     reader.onload = (e) => {
       const result = e.target?.result;
@@ -85,43 +62,18 @@ export function Blog() {
         setInputs((prev) => ({ ...prev, image: result }));
       }
     };
-    reader.readAsDataURL(file);
   };
 
-  const handleSubmit = async (e) => {
+  const handleSubmit = (e) => {
     e.preventDefault();
     const submitErrors = validateForm(inputs);
+    console.log(submitErrors);
 
     if (Object.keys(submitErrors).length > 0) {
       const priority = ["image", "title", "description", "content"];
       const firstError = priority.find((key) => submitErrors[key]);
       if (firstError) toast.error(submitErrors[firstError]);
       return;
-    }
-
-    const formData = new FormData();
-    formData.append("title", inputs.title);
-    formData.append("description", inputs.description);
-    formData.append("content", inputs.content);
-    if (imageFile) formData.append("image", imageFile);
-    const accessToken = localStorage.getItem("token");
-    try {
-      await BLOG_BASE_URL.post("/add", formData, {
-        headers: {
-          Authorization: `Bearer ${accessToken}`,
-        },
-      });
-      toast.success("Tạo bài thành công!");
-      setImageFile(null);
-      setPreview("");
-      setInputs({
-        title: "",
-        description: "",
-        content: "",
-        image: "",
-      });
-    } catch (error) {
-      console.log(error);
     }
   };
   return (
@@ -130,37 +82,25 @@ export function Blog() {
         <CardHeader className="text-center">
           <CardTitle className="text-2xl font-bold">Create New Blog</CardTitle>
           <CardDescription>
-            Fill in the details to create your blog post
+            Fill in the details to update your blog post
           </CardDescription>
         </CardHeader>
         <CardContent>
           <form onSubmit={handleSubmit} className="space-y-6">
             <div className="flex flex-col items-center">
-              {preview ? (
-                <div className="mt-4">
-                  <img
-                    src={preview}
-                    alt="Preview"
-                    className="max-h-60 rounded-lg object-cover mx-auto"
-                  />
-                </div>
-              ) : (
-                <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors w-full">
-                  <div className="flex flex-col items-center gap-3">
-                    <div className="p-3 bg-muted rounded-full">
-                      <ImageIcon className="h-6 w-6 text-muted-foreground" />
-                    </div>
-                    <div className="space-y-1">
-                      <p className="text-sm font-medium">
-                        Upload Featured Image
-                      </p>
-                      <p className="text-xs text-muted-foreground">
-                        Drag and drop or click to browse
-                      </p>
-                    </div>
+              <div className="border-2 border-dashed border-border rounded-lg p-6 text-center hover:border-primary/50 transition-colors w-full">
+                <div className="flex flex-col items-center gap-3">
+                  <div className="p-3 bg-muted rounded-full">
+                    <ImageIcon className="h-6 w-6 text-muted-foreground" />
+                  </div>
+                  <div className="space-y-1">
+                    <p className="text-sm font-medium">Upload Featured Image</p>
+                    <p className="text-xs text-muted-foreground">
+                      Drag and drop or click to browse
+                    </p>
                   </div>
                 </div>
-              )}
+              </div>
               <Label htmlFor="image" className="cursor-pointer mt-3">
                 <div className="flex items-center space-x-1 text-sm border rounded px-3 py-1 hover:bg-gray-50">
                   <Upload className="h-3 w-3" />
@@ -168,12 +108,10 @@ export function Blog() {
                 </div>
               </Label>
               <Input
+                onChange={handleFile}
                 id="image"
-                onChange={handleInputFile}
-                ref={fileRef}
                 name="image"
                 type="file"
-                accept="image/*"
                 className="hidden"
               />
             </div>
@@ -182,9 +120,9 @@ export function Blog() {
               <div>
                 <Label htmlFor="title">Title *</Label>
                 <Input
-                  id="title"
                   value={inputs.title}
                   onChange={handleInput}
+                  id="title"
                   name="title"
                   className="mt-2"
                   placeholder="Enter your blog title..."
@@ -194,9 +132,9 @@ export function Blog() {
               <div>
                 <Label htmlFor="description">Description *</Label>
                 <Textarea
-                  id="description"
                   value={inputs.description}
                   onChange={handleInput}
+                  id="description"
                   name="description"
                   className="mt-2 min-h-[80px] resize-none"
                   placeholder="Write a brief description..."
@@ -206,9 +144,9 @@ export function Blog() {
               <div>
                 <Label htmlFor="content">Content *</Label>
                 <Textarea
-                  id="content"
                   value={inputs.content}
                   onChange={handleInput}
+                  id="content"
                   name="content"
                   className="mt-2 min-h-[160px] resize-y"
                   placeholder="Write your blog content here..."
@@ -217,7 +155,7 @@ export function Blog() {
             </div>
 
             <Button type="submit" className="w-full">
-              Publish Blog
+              Update Blog
             </Button>
           </form>
         </CardContent>

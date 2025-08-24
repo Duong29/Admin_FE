@@ -4,6 +4,7 @@ import Register from "../pages/Register";
 import UpdateUser from "../pages/UpdateUser";
 import { Blog } from "../pages/Blog";
 import BlogDisplay from "../pages/BlogDisplay";
+import { BlogUpdate } from "../pages/BlogUpdate";
 const AppRouter = () => {
   return (
     <Router>
@@ -11,8 +12,9 @@ const AppRouter = () => {
         <Route path="/login" element={<Login />} />
         <Route path="/register" element={<Register />} />
         <Route path="/update/:id" element={<UpdateUser />} />
-        <Route path="/blog" element={<Blog />} />
-        <Route path="/blog-display" element={<BlogDisplay />} />
+        <Route path="/create/blog" element={<Blog />} />
+        <Route path="/blog/list" element={<BlogDisplay />} />
+        <Route path="blog/edit/:id" element={<BlogUpdate />} />
       </Routes>
     </Router>
   );

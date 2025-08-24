@@ -64,6 +64,11 @@ export default function Login() {
         if (res.data.token) {
           localStorage.setItem("token", res.data.token);
         }
+        setInputs({
+          email: "",
+          password: "",
+          level: "1"
+        });
       })
       .catch((error) => {
         const errors = error?.response?.data?.message;
